@@ -24,6 +24,7 @@
 
 (define-map seller-invoices principal (list 100 uint))
 (define-map buyer-invoices principal (list 100 uint))
+(define-map invoice-metadata uint (string-ascii 256))
 
 (define-public (create-invoice (buyer principal) (amount uint))
   (let ((invoice-id (var-get next-invoice-id)))
@@ -128,8 +129,22 @@
   )
 )
 
+(define-public (set-invoice-metadata (invoice-id uint) (metadata (string-ascii 256)))
+  (let ((invoice (unwrap! (map-get? invoices invoice-id) ERR_INVOICE_NOT_FOUND)))
+    (asserts!
+      (or (is-eq tx-sender (get seller invoice)) (is-eq tx-sender (get buyer invoice)))
+      ERR_NOT_AUTHORIZED)
+    (map-set invoice-metadata invoice-id metadata)
+    (ok true)
+  )
+)
+
 (define-read-only (get-invoice (invoice-id uint))
   (map-get? invoices invoice-id)
+)
+
+(define-read-only (get-invoice-metadata (invoice-id uint))
+  (map-get? invoice-metadata invoice-id)
 )
 
 (define-read-only (get-invoice-owner (invoice-id uint))
